@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+
+<head><title>JS GAME THIRD TRY</title></head>
+<style>
+ * {
+   padding: 0;
+   margin: 0;
+ }
+ canvas {
+   background: #eee;
+   display: block;
+   margin: 0 auto;
+}
+</style>
+
+<body>
+
+  <canvas width="800" height="600" id="myCanvas"> </canvas>
+  <script>
+    var canvas = document.getElementById('myCanvas');
+    var ctx = canvas.getContext('2d');
+
+    var walls =[];
+    walls.push( new Wall( 20, 20, 80, 160, "blue" ) );
+    walls.push( new Wall( 320, 60, 180, 60, "blue" ) );
+    walls.push( new Wall( 80, 320, 80, 80, "blue" ) );
+    walls.push( new Wall( 220, 320, 50, 50, "blue" ) );
+
+
+    //we will allow the g2 object to move on WASD keys
+addEventListener("keydown", handleKey, false);
+
+//the drawAll function is responsible for drawing...all?
+setInterval( drawAll, 33 );
+
+
+function drawAll() {
+  //clear background
+  context.fillStyle = "white";
+  context.fillRect(0, 0, canvas.width, canvas.height);
+
+  //draw all walls in array
+  for(var p in walls)
+  	walls[p].draw();
+
+  //draw movable character
+  hero.draw();
+}
+
+//if WASD keys, move g2 object by a deltaX, deltaY
+//also checks for collision after moving...changing
+//color of g2 object if a collision is found
+function handleKey(event) {
+  var key = event.key;
+  if(key == 'w') hero.move(0, -2);
+  else if(key == 's') hero.move(0, 2);
+  else if(key == 'a') hero.move(-2, 0);
+  else if(key == 'd') hero.move(2, 0);
+
+
+  //set thing's color to green and then check walls for
+  //a collision...can't do if-else logic in loop below
+  //because then the last item in the array would set
+  //the thing's color to red or green...only the last
+  //item would matter
+  hero.changeColor("green");
+
+  //check each wall for a collision with the thing
+  for(var p in walls) {
+  	if(detectCollision(walls[p], thing))
+  		hero.changeColor("red");
+  }
+}
+
+
+
+/*This function assumes that both parameters have
+properties of x, y, width, and height. It returns
+true if the objects overlap, false otherwise.
+*/
+function detectCollision(obj1, obj2) {
+  return (	obj1.x < obj2.x + obj2.width &&
+  			obj1.x + obj1.width > obj2.x &&
+            obj1.y < obj2.y + obj2.height &&
+            obj1.y + obj1.height > obj2.y );
+}
+
+//some object to move around...
+function Thing(a, b, c, d, e) {
+  this.x = a;
+  this.y = b;
+  this.width = c;
+  this.height = d;
+  this.color = e;
+
+  this.draw = function() {
+      context.fillStyle = this.color;
+      context.fillRect(this.x, this.y, this.width, this.height);
+  }
+
+  this.move = function( dx, dy ) {
+  	  this.x += dx;
+      this.y += dy;
+  }
+
+  this.changeColor = function(clr) {
+      this.color = clr;
+  }
+}
+
+
+    function Wall(a, b, c, d, e) {
+      this.x = a;
+      this.y = b;
+      this.width = c;
+      this.height = d;
+      this.color = e;
+
+      this.draw = function() {
+        context.fillStyle = this.color;
+        context.fillRect(this.x, this.y, this.width, this.height);
+  }
+}
+
+
+  </script>
+
+</body>
+
+</html>

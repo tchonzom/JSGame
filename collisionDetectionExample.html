@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Collision Detection Example</title>
+</head>
+<body>
+	<p>There is a movable object (via WASD) that uses an 
+	image when drawn onscreen. There is a wall object that 
+	cancels motion for the movable object (MO). When the MO
+	hits a moving blob (MB) the MO takes damage to its health.
+	</p>
+	
+	<canvas width=800 height=800 id="mCanvas"></canvas>
+	
+	<script>
+		var canvas = document.getElementById("mCanvas");
+		var context = canvas.getContext("2d");
+		
+		var NORTH = 1, SOUTH = 2, EAST = 3, WEST = 4;
+		
+		var hero = new Hero();
+		var walls = [];
+		walls.push( new Wall(0, 100, 200, 20) );
+		walls.push( new Wall(300, 300, 50, 100) );
+		var blobs = [];
+		blobs.push( new Blob(200, 400, 40, 40) );
+		blobs.push( new Blob(600, 100, 80, 20) );
+
+		context.moveTo(10, 780);
+		context.lineTo(780, 780);
+		
+		window.addEventListener("keydown", handleKeyDown);
+		window.addEventListener("keyup", handleKeyUp);
+		
+		setInterval(loop, 33);
+		
+		function handleKeyDown(event) {
+			if(event.key == 'w') {
+				hero.movingUp = true;
+			}
+			else if(event.key == 's') {
+				hero.movingDown = true;
+			}
+			else if(event.key == 'a') {
+				hero.movingLeft = true;
+			}
+			else if(event.key == 'd') {
+				hero.movingRight = true;
+			}
+		}
+		
+		function handleKeyUp(event) {
+			if(event.key == 'w') {
+				hero.movingUp = false;
+			}
+			else if(event.key == 's') {
+				hero.movingDown = false;
+			}
+			else if(event.key == 'a') {
+				hero.movingLeft = false;
+			}
+			else if(event.key == 'd') {
+				hero.movingRight = false;
+			}
+		}
+		
+		function loop() {
+			clearBackground();
+			moveAllObjects();
+			drawAllObjects();
+		}
+		
+		function clearBackground() {
+			context.fillStyle = "pink";
+			context.fillRect(0, 0, canvas.width, canvas.height);
+		}
+		
+		function moveAllObjects() {
+			hero.move();
+			for(var pos = 0; pos < blobs.length; pos++) {
+				blobs[pos].move();
+			}
+		}
+		
+		function drawAllObjects() {
+			hero.draw();
+			for(var pos = 0; pos < walls.length; pos++) {
+				walls[pos].draw();
+			}
+			for(var pos = 0; pos < blobs.length; pos++) {
+				blobs[pos].draw();
+			}
+		}
+		
+		
+		function Hero() {
+			this.x = 0;
+			this.y = 0;
+			
+			this.leftSprite = new Image();
+			this.rightSprite = new Image();
+			this.upSprite = new Image();
+			this.downSprite = new Image();
+			this.leftSprite.src = "spritesheetCoolRunnerLeft.png";
+			this.rightSprite.src = "spritesheetCoolRunnerRight.png";
+			this.upSprite.src = "spritesheetCoolRunnerUp.png";this.downSprite.src = "spritesheetCoolRunnerDown.png";
+			
+			this.currentSpriteSheet = this.rightSprite;
+			
+			this.actualSpriteWidth = 120;
+			this.actualSpriteHeight = 120;
+			this.currentImagePosition = 0;
+			this.totalImageCount = 6;
+			
+			this.width = 60;
+			this.height = 60;
+			this.speed = 5;
+			this.movingRight = false;
+			this.movingLeft = false;
+			this.movingUp = false;
+			this.movingDown = false;
+
+			this.health = 100;
+			
+			this.hitWallSound = document.createElement("audio");
+			this.hitWallSound.src = "explosion.mp3";
+			
+			this.hitBlobSound = document.createElement("audio");
+			this.hitBlobSound.src = "pew-pew.mp3";
+			
+			this.move = function() {
+
+				this.jumping = false;
+
+
+
+				var origX = this.x;
+				var origY = this.y;
+				var gravity = 10; 
+				this.jumpingSpeed = -10; 
+				this.jumping;
+				this.xVel = 0;
+				this.yVel = 0; 
+				
+				this.currentImagePosition++;
+				this.currentImagePosition %= this.totalImageCount;
+
+
+
+				if(this.movingUp) {
+					this.y -= this.speed;
+				}
+				else if(this.movingDown) {
+					this.y += this.speed;
+				}
+				
+				if(this.movingRight) {
+					this.x += this.speed;
+				}
+				else if(this.movingLeft) {
+					this.x -= this.speed;
+				}
+
+
+
+				//are you standing on something --> fall and Y ++ 
+				//jumping using Y with jumpspeed, keep subtracting by 2 to rise till 0 then go positive y to fall back down 
+
+						//if(thix.y >= origY + jumpingSpeed) {
+					//	this.y += this.speed;{
+					//		if(this.y == origY){
+					//			speed = 0;
+					//		}
+					//	}
+					//}
+
+
+
+			this.jump = function() {
+				if(!jumping){
+					jumping = true; 
+					setTimeout(land, 500);
+				}
+			}
+
+			this.land = function() {
+				jumping = false; 
+			}
+
+				
+				///////////////////////////////
+				//check for collisions.....
+				///////////////////////////////
+				
+				for(var pos = 0; pos < blobs.length; pos++) {
+					if( detectCollision(this, blobs[pos] ) ) {
+						this.health--;
+						this.x = origX;
+						this.y = origY;
+						this.hitBlobSound.play();
+						break;
+					}
+				}
+				
+				for(var pos = 0; pos < walls.length; pos++) {
+					if( detectCollision(this, walls[pos]) ) {
+						this.x = origX;
+						this.y = origY;
+						this.hitWallSound.play();
+						break;
+					}
+				}
+				
+			}
+			
+			this.draw = function() {
+				var spriteX = 0;
+				var spriteY = 0;
+
+				var jumpHeight = 45; 
+				
+				if(this.movingLeft || this.movingRight) {
+					this.currentSpriteSheet = this.movingLeft ? 
+							this.leftSprite : this.rightSprite;
+							
+					spriteX = this.currentImagePosition * 
+							this.actualSpriteWidth;
+				}
+				else if(this.movingUp || this.movingDown) {
+					this.currentSpriteSheet = this.movingUp ? 
+							this.upSprite : this.downSprite;
+				
+					spriteY = this.currentImagePosition * 
+							this.actualSpriteHeight;
+				}
+				
+				
+				context.drawImage(this.currentSpriteSheet, 
+						spriteX, spriteY, this.actualSpriteWidth,
+							this.actualSpriteHeight,
+						
+						this.x, this.y, this.width, this.height);
+			
+			
+				context.font = "30px Comic Sans MS";
+				context.fillStyle = "black";
+				context.fillText( "Health: " + this.health, 0, 			canvas.height);
+			}
+		}
+		
+		function Wall(x,y,w,h) {
+			this.x = x;
+			this.y = y;
+			this.width = w;
+			this.height = h;
+			
+			this.draw = function() {
+				context.fillStyle = "black";
+				context.fillRect(this.x, this.y, this.width, this.height);
+			}
+		}
+	
+		
+		function Blob(x,y,w,h) {
+			this.x = x;
+			this.y = y;
+			this.width = w;
+			this.height = h;
+			this.speed = 10;
+			
+			this.direction = Math.floor(Math.random() * 4 + 1);
+			
+			this.draw = function() {
+				context.fillStyle = "red";
+				context.fillRect(this.x, this.y, this.width, this.height);
+			}
+			
+			this.move = function() {
+				var origX = this.x;
+				var origY = this.y;
+				
+				if(this.direction == NORTH) {
+					this.y -= this.speed;
+				}
+				else if(this.direction == SOUTH) {
+					this.y += this.speed;
+				}
+				else if(this.direction == EAST) {
+					this.x += this.speed;
+				}
+				else {
+					this.x -= this.speed;
+				}
+				
+				//check for boundary of canvas
+				if(this.x < 0 || this.x + this.width > canvas.width ||
+					this.y < 0 || this.y + this.height > canvas.height) {
+						this.x = origX;
+						this.y = origY;
+						//re-randomize the direction
+						this.direction = Math.floor(Math.random() * 4 + 1);
+					}
+					
+				//check for collision with walls
+				for(var pos = 0; pos < walls.length; pos++) {
+					if(detectCollision( this, walls[pos]) ) {
+						this.x = origX;
+						this.y = origY;
+						//re-randomize the direction
+						this.direction = Math.floor(Math.random() * 4 + 1);
+					}
+				}
+				
+				
+				//check for collision with walls
+				for(var pos = 0; pos < blobs.length; pos++) {
+					if(detectCollision( this, blobs[pos]) &&
+						(this.x != blobs[pos].x || this.y != blobs[pos].y)
+					) {
+						this.x = origX;
+						this.y = origY;
+						//re-randomize the direction
+						this.direction = Math.floor(Math.random() * 4 + 1);
+					}
+				}
+				
+				
+				if(detectCollision(this, hero)) {
+					this.x = origX;
+					this.y = origY;
+					this.direction = Math.floor(Math.random() * 4 + 1);
+					hero.health--;
+				}
+			}
+		}
+		
+		
+		
+		/*This function assumes that both parameters have
+		properties of x, y, width, and height. It returns 
+		true if the objects overlap, false otherwise.
+		*/
+		function detectCollision(obj1, obj2) {
+
+		  return (	obj1.x < obj2.x + obj2.width &&
+					obj1.x + obj1.width > obj2.x &&
+					obj1.y < obj2.y + obj2.height &&
+					obj1.y + obj1.height > obj2.y );
+		}
+	
+	</script>
+	
+</body>
+</html>

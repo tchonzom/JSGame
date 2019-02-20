@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>JS  Game</title>
+  <style type="text/css">
+    * {
+      
+    }
+  </style>
+</head>
+
+<style></style>
+
+<body>
+  <p> There is a moveable object (via WASD) that uses an image when drawn on screen. There is a wall object
+     that cancels motion for the movveable object (MO). When the MO hits a moving blob (MB) the MO takes damage to its
+     health
+  </p>
+
+  <canvas width=800 height=500 id="myCanvas"></canvas>
+
+  <script>
+    var canvas = document.getElementById(myCanvas);
+    var context = canvas.getContext("2d");
+
+    var NORTH = 1, SOUTH = 2, EAST = 3, West = 4;
+
+    var hero = new Hero();
+    var walls = [];
+    walls.push(new Wall(100, 100, 200, 20));
+    walls.push(new Wall(300, 300, 100, 50));
+    var blobs = [];
+    blobs.push(new Blob(200, 400, 40, 40));
+    blobs.push(new Blob(600, 400, 80, 20));
+
+
+    window.addEventListener("keyDown", handleKeyDown);
+    window.addEventListener("keyUp", handleKeyUp);
+
+
+    setInterval(loop, 33);
+
+    function handleKeyDown(event) {
+      if (event.key == 'w') {
+        hero.movingUp = true;
+      }
+      else if(event.key =='s') {
+        hero.movingDown = true;
+      }
+      else if(event.key == 'a'){
+        hero.movingLeft = true;
+      }
+      else if (event.key == 'd') {
+        hero.movingRight = true;
+      }
+    }
+
+    function handleKeyUp(event) {
+      if (event.key == 'w') {
+        hero.movingUp = false;
+      }
+      else if(event.key =='s') {
+        hero.movingDown = false;
+      }
+      else if(event.key == 'a'){
+        hero.movingLeft = false;
+      }
+      else if (event.key == 'd') {
+        hero.movingRight = false;
+      }
+    }
+
+    function loop(){
+      //clear the background
+      clearBackground();
+
+      //move all objects
+      moveAllObjects();
+
+      //draw all objects
+      drawAllObjects();
+    }
+
+    function clearBackground(){
+      context.fillStyle = "pink";
+      context.fillRect(0, 0, canvas.width, canvas.height);
+    }
+
+    function moveAllObjects(){
+      hero.move();
+      for(var pos = 0; pos < blobs.length; pos++){
+        blobs[pos].move();
+      }
+    }
+
+    function drawAllObjects(){
+      hero.draw();
+      for(var pos = 0; pos < walls.length; pos++) {
+        walls[pos].draw();
+      }
+      for(var pos = 0; pos < blobs.length; pos++) {
+        blobs[pos].draw();
+      }
+    }
+
+    function hero() {
+      this.x = 0;
+      this.y = 0;
+      this.img = new Image();
+      this.img.src = "BikeTire.gif";
+      this.width = 60;
+      this.height = 60;
+      this.speed = 5;
+      this.movingRight = false;
+      this.movingLeft = false;
+      this.movingUp = false;
+      this.movingDown = false;
+
+      this.health = 100;
+
+      this.hitWallSound = document.createElement("audio");
+      this.hitWallSound.src = "sicko.mp3";
+
+      this.move = function () {
+        var origX = this.x;
+        var origY = this.y;
+        if(this.movingUp) {
+          this.origY -= this.speed;
+        }
+        else if(this.movingDown){
+          this.Y += this.speed;
+        }
+
+        if(this.movingRight){
+          this.origX += this.speed;
+        }
+        else if(this.movingLeft){
+          this.origX -= this.speed;
+        }
+        ////////////////////
+          ///CHECK FOR COLLISIONS
+
+          for(var pos = 0; pos < blobs.length; pos++){
+            if(detectCollision(this.blobs[pos]){
+              this.health --;
+              this.x = origX;
+              this.y = origY;
+              break;
+            }
+          }
+
+        ////////////////////
+        
+
+      }
+
+      this.draw = function () {
+        context.drawImage(this.x, this.y,
+          this.width, this.height);
+
+        context.font = "20px comic sans"
+        context.fillStyle = "black";
+        context.fillText("Health" + this.health, 0, canvas.heaight);
+      }
+    }
+
+    function Wall(x, y, w, h) {
+      this.x = x;
+      this.y = y;
+      this.width = w;
+      this.height = h;
+
+      this.draw = function() {
+        context.fillStyle = "black";
+        context.fillRect(this. x, this.y,
+          this.width, this.height);
+      }
+
+
+
+          for(var pos = 0; pos < blobs.length; pos++){
+            if(detectCollision(this.blobs[pos]){
+              this.health --;
+              this.x = origX;
+              this.y = origY;
+              break;
+            }
+          }
+    }
+
+    function Blob(x, y, w, h) {
+      this.x = x;
+      this.y = y;
+      this.width = w;
+      this.height = h;
+      this.speed =10;
+
+      this.direction = Math.floor(Math.random() * 4 +1); 
+
+      this.draw = function() {
+        context.fillStyle = "red";
+        context.fillRect(this. x, this.y,
+          this.width, this.height);
+      }
+
+      this.move = function() {
+        //empty on purpose for now
+
+        var origX = this.x;
+        var origY = this.y; 
+
+        if(this.direction == NORTH) {
+          this.y -= this.speed;
+        }
+        else if(this.direction == SOUTH ) {
+          this.y += this.speed;
+        }
+        else if(this.direction == EAST){
+          this.x+= this.speed;
+        }
+        else {
+          this.x -= this.speed;
+        }
+
+        if(this.x < 0 || this.x + this.width > canvas.height || 
+          this.y < 0 || this.y + this.height > canvas.height){
+            this.x = origX;
+            this.y = origY;
+            this.direction = Math.floor(Math.random() * 4 +1); 
+
+
+        }
+
+        for(var pos = 0; pos < walls.length; pos++){
+          if(detectCollision(this.walls[pos]){
+
+
+          }
+        }
+      }
+    }
+
+    function detectCollision(obj1, obj2) {
+
+      return{ 
+        obj1.x < obj2.x + obj2.width &&
+
+
+      } 
+    }
+
+
+  </script>
+
+
+</body>
+
+</html>
