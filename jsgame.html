@@ -10,7 +10,7 @@
     	}
 
     	canvas { 
-    		background-image: url(maxresdefault.jpg);
+    		background-image: url(tree.jpg);
     		background-repeat: no-repeat;
     		background-size: auto;
     		display: block; 
@@ -21,19 +21,46 @@
     </style>
 </head>
 <body>
-<canvas id="myCanvas" width="1000" height="700"></canvas>
+<canvas id="myCanvas" width="1000" height="800"></canvas>
 
 
 <script>
 
 		var canvas = document.getElementById("myCanvas");
 		var context = canvas.getContext('2d');
-		
+
 		var NORTH = 1, SOUTH = 2, EAST = 3, WEST = 4;
 		
 		var hero = new Hero();
 		var walls = [];
+		/* EDGES OF THE CANVAS FOR EASY COLLISION DETECTION */
+		walls.push( new Wall(0,0, 2, canvas.height));
+		walls.push( new Wall(0, 798, canvas.width, 2));
+		walls.push( new Wall(998, 0, 2, canvas.width));
+		walls.push( new Wall(0, 0, canvas.width, 2));
+
+
 		walls.push( new Wall(0,200,200,20));
+		walls.push(new Wall(800, 100, 200, 20));
+		walls.push(new Wall(330, 75, 300, 20));
+		walls.push(new Wall(330, 75, 20, 370));
+		walls.push(new Wall(330, 440, 300, 20));
+		walls.push(new Wall(180, 340, 150, 20));
+		walls.push(new Wall(0, 520, 150, 20));
+		walls.push(new Wall(0, 700, 150, 20));
+		walls.push(new Wall(330, 610, 150, 20));
+		walls.push(new Wall(450, 280, 290, 20));
+		walls.push(new Wall(740, 280, 20, 370));
+		walls.push(new Wall(580, 650, 180, 20));
+		walls.push(new Wall(750, 480, 140, 20));
+		walls.push(new Wall(850, 700, 150, 20));
+
+
+
+		/*context.fillRect(0,640, canvas.width, 100);*/
+
+		let bckgrnd = new Image();
+		bckgrnd.src = "tree.jpg";
 
 		window.addEventListener("keydown", handleKeyDown);
 		window.addEventListener("keyup", handleKeyUp);
@@ -77,8 +104,7 @@
 		}
 		
 		function clearBackground() {
-			context.fillStyle = "purple";
-			context.fillRect(0, 0, canvas.width, canvas.height);
+
 		}
 		
 		function moveAllObjects() {
@@ -95,7 +121,7 @@
 		
 		function Hero() {
 			this.x = 0;
-			this.y = 620;
+			this.y = 540;
 			
 			this.leftSprite = new Image();
 			this.rightSprite = new Image();
@@ -236,9 +262,10 @@
 						this.x, this.y, this.width, this.height);
 			
 			
-				context.font = "30px Comic Sans MS";
+				/*context.font = "30px Lucida Console Monaco monospace";
+
 				context.fillStyle = "black";
-				context.fillText( "Health: " + this.health, 0, 			canvas.height);
+				context.fillText( "Health: " + this.health, 0, canvas.height);*/
 			}
 		}
 		
@@ -249,7 +276,7 @@
 			this.height = h;
 			
 			this.draw = function() {
-				context.fillStyle = "black";
+				context.fillStyle = "green";
 				context.fillRect(this.x, this.y, this.width, this.height);
 			}
 
