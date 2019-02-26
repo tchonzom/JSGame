@@ -1,0 +1,46 @@
+<html>
+	<body>
+	<canvas id="myCanvas" width="1000" height="900"></canvas>
+
+	<style>
+		canvas{
+			border: 2px solid black;
+		}
+		
+	</style>
+	<script>
+		var canvas = document.getElementById("myCanvas");
+		var context = canvas.getContext('2d');
+		
+		function Hearts(){
+			this.x = 0;
+			this.y = 500;
+			
+			this.heart1 = new Image();
+			this.heart2 = new Image();
+			this.heart3 = new Image();
+			this.heart4 = new Image();
+			this.heart5 = new Image();
+			this.heart6 = new Image();
+			this.heart7 = new Image();
+			
+			this.heart1.src = "heart1.jpeg"
+			this.heart2.src = "heart2.jpeg"
+			this.heart3.src = "heart3.jpeg"
+			this.heart4.src = "heart4.jpeg"
+			this.heart5.src = "heart5.jpeg"
+			this.heart6.src = "heart6.jpeg"
+			this.heart7.src = "heart7.jpeg"
+		}
+		
+		var count = 7;
+		var index = 1;
+
+		while (index <= count) {
+		  document.getElementById('container').innerHTML += '<img src="heart1.jpeg" style="width:16px;height:16px">';
+
+			console.log(index);
+			index++;
+		}
+	</script>
+</html>
