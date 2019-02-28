@@ -9,7 +9,7 @@
     		margin: 0; 
     	}
     	canvas { 
-    		background-image: url(maxresdefault.jpg);
+    		background-image: url(tree.jpg);
     		background-repeat: no-repeat;
     		background-size: auto;
     		display: block; 
@@ -19,41 +19,28 @@
     </style>
 </head>
 <body>
-<canvas id="myCanvas" width="1000" height="900"></canvas>
+<canvas id="myCanvas" width="1000" height="800"></canvas>
 
 
 <script>
 		var canvas = document.getElementById("myCanvas");
 		var context = canvas.getContext('2d');
-		
 		var NORTH = 1, SOUTH = 2, EAST = 3, WEST = 4;
 		
 		var hero = new Hero();
-		var walls = [];
-		walls.push( new Wall(0,200,200,20));
-		walls.push(new Wall(800, 100, 200, 20));
-		walls.push(new Wall(330, 75, 300, 20));
-		walls.push(new Wall(330, 75, 20, 370));
-		walls.push(new Wall(330, 440, 300, 20));
-		walls.push(new Wall(180, 340, 150, 20));
-		walls.push(new Wall(0, 520, 150, 20));
-		walls.push(new Wall(0, 700, 150, 20));
-		walls.push(new Wall(330, 610, 150, 20));
-		walls.push(new Wall(450, 280, 290, 20));
-		walls.push(new Wall(740, 280, 20, 370));
-		walls.push(new Wall(580, 650, 180, 20));
-		walls.push(new Wall(750, 480, 140, 20));
-		walls.push(new Wall(850, 700, 150, 20));
 		
-		
+		/*context.fillRect(0,640, canvas.width, 100);*/
+		let bckgrnd = new Image();
+		bckgrnd.src = "tree.jpg";
 		window.addEventListener("keydown", handleKeyDown);
 		window.addEventListener("keyup", handleKeyUp);
 		
 		setInterval(loop, 33);
 		
 		function handleKeyDown(event) {
-			if(event.key == 'w') {
-				hero.movingUp = true;
+			if(event.key == 'w' && hero.jumingUp == false) {
+				hero.jumingUp = true;
+				hero.jumpingSpeed = hero.startingJumpSpeed;
 			}
 			else if(event.key == 's') {
 				hero.movingDown = true;
@@ -68,7 +55,7 @@
 		
 		function handleKeyUp(event) {
 			if(event.key == 'w') {
-				hero.movingUp = false;
+				//hero.jumingUp = false;
 			}
 			else if(event.key == 's') {
 				hero.movingDown = false;
@@ -88,8 +75,7 @@
 		}
 		
 		function clearBackground() {
-			context.fillStyle = "purple";
-			context.fillRect(0, 0, canvas.width, canvas.height);
+			context.drawImage(bckgrnd, 0, 0);
 		}
 		
 		function moveAllObjects() {
@@ -101,12 +87,15 @@
 			for(var pos = 0; pos < walls.length; pos++) {
 				walls[pos].draw();
 			}
+			for(var pos = 0; pos < coins.length; pos++) {
+				coins[pos].draw();
+			}
 		}
 		
 		
 		function Hero() {
 			this.x = 0;
-			this.y = 620;
+			this.y = 540;
 			
 			this.leftSprite = new Image();
 			this.rightSprite = new Image();
@@ -128,41 +117,65 @@
 			this.speed = 5;
 			this.movingRight = false;
 			this.movingLeft = false;
-			this.movingUp = false;
-			this.movingDown = false;
+			/*this.movingUp = false;*/
+			this.movingDown = false; 
+			this.jumingUp = false;
+			this.startingJumpSpeed = -10;
+			this.jumpingSpeed = this.startingJumpSpeed;
 			this.health = 100;
 			
-			this.hitWallSound = document.createElement("audio");
-			/*this.hitWallSound.src = "explosion.mp3";*/
-			
-			this.hitBlobSound = document.createElement("audio");
-			/*this.hitBlobSound.src = "pew-pew.mp3";*/
-			
 			this.move = function() {
-				/*this.jumping = false;*/
 				var origX = this.x;
 				var origY = this.y;
-				var gravity = 10; 
-				this.jumpingSpeed = -10; 
-				this.jumping;
-				this.xVel = 0;
-				this.yVel = 0; 
 				
 				this.currentImagePosition++;
 				this.currentImagePosition %= this.totalImageCount;
-				if(this.movingUp) {
+				/*if(this.movingUp) {
 					this.y -= this.speed;
-				}
-				else if(this.movingDown) {
-					this.y += this.speed;
-				}
-				
+				}*/
 				if(this.movingRight) {
 					this.x += this.speed;
 				}
 				else if(this.movingLeft) {
 					this.x -= this.speed;
 				}
+				if(this.jumingUp){
+					this.y += this.jumpingSpeed;
+					this.jumpingSpeed += .5;
+			
+				}
+				console.log(this.x + ", " + this.y + ", " + this.jumpingSpeed);
+				for(var pos = 0; pos < walls.length; pos++) {
+						if( detectCollision(this, walls[pos]) ) {
+							this.jumingUp = false;
+							this.jumpingSpeed = this.startingJumpSpeed;
+							this.x = origX;
+							this.y = origY;
+							console.log("collision detected");
+							break;
+						}
+				}
+				if(this.jumpingSpeed > 0 || this.jumingUp == false){
+					origY = this.y;
+					this.y += 3; 
+					var floorBeneathUs = false;
+					for(var pos = 0; pos < walls.length; pos++) {
+							if( detectCollision(this, walls[pos]) ) {
+								this.floorBeneathUs = true;
+								this.jumingUp = false;
+								this.jumpingSpeed = this.startingJumpSpeed;
+								this.y = origY;
+								break;
+							}
+					}
+					if(this.floorBeneathUs == false) {
+						this.y += 3;
+						console.log("floor beneath is false");
+					}
+				}
+			
+				
+				
 				//are you standing on something --> fall and Y ++ 
 				//jumping using Y with jumpspeed, keep subtracting by 2 to rise till 0 then go positive y to fall back down 
 						//if(thix.y >= origY + jumpingSpeed) {
@@ -182,7 +195,9 @@
 				jumping = false; 
 			}*/
 				
-				
+				///////////////////////////////
+				//check for collisions.....
+				///////////////////////////////
 				
 				/* for(var pos = 0; pos < blobs.length; pos++) {
 					if( detectCollision(this, blobs[pos] ) ) {
@@ -197,6 +212,7 @@
 					if( detectCollision(this, walls[pos]) ) {
 						this.x = origX;
 						this.y = origY;
+						console.log("alternate collision");
 						break;
 					}
 				}
@@ -215,8 +231,8 @@
 					spriteX = this.currentImagePosition * 
 							this.actualSpriteWidth;
 				}
-				else if(this.movingUp || this.movingDown) {
-					this.currentSpriteSheet = this.movingUp ? 
+				else if(this.jumingUp || this.movingDown) {
+					this.currentSpriteSheet = this.jumingUp ? 
 							this.upSprite : this.downSprite;
 				
 					spriteY = this.currentImagePosition * 
@@ -226,14 +242,12 @@
 				
 				context.drawImage(this.currentSpriteSheet, 
 						spriteX, spriteY, this.actualSpriteWidth,
-							this.actualSpriteHeight,
-						
-						this.x, this.y, this.width, this.height);
+							this.actualSpriteHeight, this.x, this.y, this.width, this.height);
 			
 			
-				context.font = "30px Comic Sans MS";
+				/*context.font = "30px Lucida Console Monaco monospace";
 				context.fillStyle = "black";
-				context.fillText( "Health: " + this.health, 0, canvas.height);
+				context.fillText( "Health: " + this.health, 0, canvas.height);*/
 			}
 		}
 		
@@ -244,14 +258,35 @@
 			this.height = h;
 			
 			this.draw = function() {
-				context.fillStyle = "black";
+				context.fillStyle = "green";
 				context.fillRect(this.x, this.y, this.width, this.height);
-				
 			}
 			this.move = function() {
 			}
 		}
 	
+		function coin(x, y) {
+	
+			this.coinSprite = new Image();
+			this.coinSprite.src = "coinsprite.png";
+			this.coinX = x;
+			this.coinY = y;
+			this.spritex = 0;
+			this.spritey = 0;
+			this.actualSpriteWidth = 44;
+			this.actualSpriteHeight = 40;
+			this.currentImagePosition = 0;
+			this.totalImageCount = 10;
+			this.width = 60;
+			this.height = 60;
+			this.amount = 10; 
+			this.draw = function() {
+				this.currentImagePosition++;
+				this.currentImagePosition %= this.totalImageCount;
+				this.spritex = this.currentImagePosition * this.actualSpriteWidth;
+				context.drawImage( this.coinSprite, this.spritex, this.spritey, this.actualSpriteWidth, this.actualSpriteHeight, this.coinX, this.coinY, this.width, this.height);
+			}
+		}
 		
 		/*function Blob(x,y,w,h) {
 			this.x = x;
@@ -332,15 +367,63 @@
 		properties of x, y, width, and height. It returns 
 		true if the objects overlap, false otherwise.
 		*/
-		function detectCollision(obj1, obj2, obj3, obj4) {
+		function detectCollision(obj1, obj2) {
 		  return (	obj1.x < obj2.x + obj2.width &&
 					obj1.x + obj1.width > obj2.x &&
 					obj1.y < obj2.y + obj2.height &&
-					obj1.y + obj1.height > obj2.y 
-					);
+					obj1.y + obj1.height > obj2.y );
 		}
 	
-	
+	var walls = [];
+		/* EDGES OF THE CANVAS FOR EASY COLLISION DETECTION */
+		walls.push( new Wall(0,0, 2, canvas.height));
+		walls.push( new Wall(0, 798, canvas.width, 2));
+		walls.push( new Wall(998, 0, 2, canvas.width));
+		walls.push( new Wall(0, 0, canvas.width, 2));
+		walls.push( new Wall(0,200,200,20));
+		walls.push(new Wall(800, 100, 200, 20));
+		walls.push(new Wall(330, 75, 300, 20));
+		walls.push(new Wall(330, 75, 20, 370));
+		walls.push(new Wall(330, 440, 300, 20));
+		walls.push(new Wall(180, 340, 150, 20));
+		walls.push(new Wall(0, 520, 150, 20));
+		walls.push(new Wall(0, 700, 150, 20));
+		walls.push(new Wall(330, 610, 150, 20));
+		walls.push(new Wall(450, 280, 290, 20));
+		walls.push(new Wall(740, 280, 20, 370));
+		walls.push(new Wall(580, 650, 180, 20));
+		walls.push(new Wall(750, 480, 140, 20));
+		walls.push(new Wall(850, 700, 150, 20));
+	var coins = [];
+		coins.push(new coin( 80, 130));
+		coins.push(new coin( 435, 210));
+		coins.push(new coin( 565, 210));
+		coins.push(new coin( 700, 210));
+		coins.push(new coin( 350, 10));
+		coins.push(new coin( 460, 10));
+		coins.push(new coin( 570, 10));
+		coins.push(new coin( 850, 30));
+		coins.push(new coin( 775, 410));
+		coins.push(new coin( 80, 455));
+		coins.push(new coin( 80, 630));
+		coins.push(new coin( 370, 540));
+		coins.push(new coin( 350, 375));
+		coins.push(new coin( 460, 375));
+		coins.push(new coin( 570, 375));
+		coins.push(new coin( 680, 580));
+		coins.push(new coin( 600, 580));
+		coins.push(new coin( 870, 635));
+		coins.push(new coin( 230, 275));
+
+
+
+
+
+		
+
+
+
+
 </script>
      
 </body>
