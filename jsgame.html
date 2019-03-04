@@ -17,12 +17,14 @@
     		margin: 0 auto; 
 			border:2px solid red;
     	}
+    	div{
+    		color: blue;
+    	}
 
     </style>
 </head>
 <body>
 <canvas id="myCanvas" width="1000" height="800"></canvas>
-
 
 <script>
 
@@ -33,10 +35,6 @@
 		
 		var hero = new Hero();
 		
-
-
-
-
 		/*context.fillRect(0,640, canvas.width, 100);*/
 
 		let bckgrnd = new Image();
@@ -91,6 +89,9 @@
 		
 		function moveAllObjects() {
 			hero.move();
+			for(var pos = 0; pos < enemies.length; pos++) {
+				enemies[pos].move();
+			}
 		}
 		
 		function drawAllObjects() {
@@ -101,6 +102,9 @@
 			for(var pos = 0; pos < coins.length; pos++) {
 				coins[pos].draw();
 			}
+			for(var pos = 0; pos < enemies.length; pos++) {
+				enemies[pos].draw();
+			}
 
 		}
 		
@@ -109,6 +113,7 @@
 			this.x = 0;
 			this.y = 540;
 			
+			/* MOVING SPRITES */ 
 			this.leftSprite = new Image();
 			this.rightSprite = new Image();
 			this.upSprite = new Image();
@@ -135,9 +140,21 @@
 			this.startingJumpSpeed = -10;
 			this.jumpingSpeed = this.startingJumpSpeed;
 
+				/* ATTACK SPRITES */ 
+				this.leftKick = new Image();
+				this.leftKick.src = "leftKick.gif";
+				this.rightKick = new Image();
+				this.rightKick.src = "rightKick.gif";
 
-			this.health = 100;
-			
+
+			this.health = 200;
+			this.healthSprite = new Image();
+			this.healthSprite.src = "heart.png";
+
+			this.money = 0; 
+			this.moneySprite = new Image();
+			this.moneySprite.src = "coinImg.png";
+
 			this.move = function() {
 
 				var origX = this.x;
@@ -199,48 +216,6 @@
 
 
 				}
-			
-				
-				
-
-
-				//are you standing on something --> fall and Y ++ 
-				//jumping using Y with jumpspeed, keep subtracting by 2 to rise till 0 then go positive y to fall back down 
-
-						//if(thix.y >= origY + jumpingSpeed) {
-					//	this.y += this.speed;{
-					//		if(this.y == origY){
-					//			speed = 0;
-					//		}
-					//	}
-					//}
-
-
-
-			/*this.jump = function() {
-				if(!jumping){
-					jumping = true; 
-					setTimeout(land, 500);
-				}
-			}
-
-			this.land = function() {
-				jumping = false; 
-			}*/
-
-				
-				///////////////////////////////
-				//check for collisions.....
-				///////////////////////////////
-				
-				/* for(var pos = 0; pos < blobs.length; pos++) {
-					if( detectCollision(this, blobs[pos] ) ) {
-						this.health--;
-						this.x = origX;
-						this.y = origY;
-						break;
-					}
-				} */
 				
 				for(var pos = 0; pos < walls.length; pos++) {
 					if( detectCollision(this, walls[pos]) ) {
@@ -251,6 +226,39 @@
 					}
 				}
 				
+			}
+
+			this.attack = function() {
+				var damage = 50; 
+
+
+
+
+
+				/* 
+
+				Check to see if there is any platform beneath us, only perform attacks when on the ground
+
+					Check to see which direction (LEFT or RIGHT)
+
+						Make sure that character is not touching the enemy (20px hitbox) 
+
+							Use rightKick.gif for when direction == Right
+								
+								if collision is detected --> take off health points from Enemy 
+								(that requires that I make a health amount on the enemies and implement
+								collision detection on that end to make the enemy disappear)
+
+							Use leftKick.gif for when direction == Left
+
+
+
+				*/ 
+
+
+
+
+
 			}
 			
 			this.draw = function() {
@@ -280,10 +288,15 @@
 							this.actualSpriteHeight, this.x, this.y, this.width, this.height);
 			
 			
-				/*context.font = "30px Lucida Console Monaco monospace";
+				context.font = "30px Lucida Console Monaco monospace";
 
-				context.fillStyle = "black";
-				context.fillText( "Health: " + this.health, 0, canvas.height);*/
+				context.fillStyle = "white";
+				context.drawImage( this.healthSprite, 10, canvas.height - 40, 40, 40);
+				context.fillText( this.health, 50, canvas.height - 10);
+
+				context.drawImage( this.moneySprite, 110, canvas.height - 40, 35, 35);
+				context.fillText( this.money, 150, canvas.height - 10);
+
 			}
 		}
 		
@@ -296,10 +309,6 @@
 			this.draw = function() {
 				context.fillStyle = "green";
 				context.fillRect(this.x, this.y, this.width, this.height);
-			}
-
-			this.move = function() {
-
 			}
 		}
 	
@@ -332,12 +341,14 @@
 
 			}
 
+				if(detectCollision(this, hero)) {
+					hero.money+= this.amount;
+				}
+
 		}
 
-
-
-		
-		/*function Blob(x,y,w,h) {
+		function Enemy(x,y, w, h){ 
+			this.health = 100; 
 			this.x = x;
 			this.y = y;
 			this.width = w;
@@ -389,9 +400,9 @@
 				
 				
 				//check for collision with walls
-				for(var pos = 0; pos < blobs.length; pos++) {
-					if(detectCollision( this, blobs[pos]) &&
-						(this.x != blobs[pos].x || this.y != blobs[pos].y)
+				for(var pos = 0; pos < enemies.length; pos++) {
+					if(detectCollision( this, enemies[pos]) &&
+						(this.x != enemies[pos].x || this.y != enemies[pos].y)
 					) {
 						this.x = origX;
 						this.y = origY;
@@ -408,9 +419,7 @@
 					hero.health--;
 				}
 			}
-		}*/ 
-		
-		
+		}	
 		
 		/*This function assumes that both parameters have
 		properties of x, y, width, and height. It returns 
@@ -448,7 +457,42 @@
 		walls.push(new Wall(850, 700, 150, 20));
 
 	var coins = [];
-		coins.push(new coin( 100, 100));
+		coins.push(new coin( 80, 130));
+		coins.push(new coin( 435, 210));
+		coins.push(new coin( 565, 210));
+		coins.push(new coin( 700, 210));
+		coins.push(new coin( 350, 10));
+		coins.push(new coin( 460, 10));
+		coins.push(new coin( 570, 10));
+		coins.push(new coin( 850, 30));
+		coins.push(new coin( 775, 410));
+		coins.push(new coin( 80, 455));
+		coins.push(new coin( 80, 630));
+		coins.push(new coin( 370, 540));
+		coins.push(new coin( 350, 375));
+		coins.push(new coin( 460, 375));
+		coins.push(new coin( 570, 375));
+		coins.push(new coin( 680, 580));
+		coins.push(new coin( 600, 580));
+		coins.push(new coin( 870, 635));
+		coins.push(new coin( 230, 275));
+
+	var enemies = [];
+		enemies.push(new Enemy(10,10,30,30));
+				enemies.push(new Enemy(10,10,30,30));
+
+		enemies.push(new Enemy(40,10,30,30));
+
+		enemies.push(new Enemy(60,60,30,30));
+
+		enemies.push(new Enemy(40,70,30,30));
+
+		enemies.push(new Enemy(100,100,30,30));
+
+		enemies.push(new Enemy(30,100,30,30));
+
+		enemies.push(new Enemy(600,10,30,30));
+
 	
 
 
