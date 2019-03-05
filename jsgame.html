@@ -40,6 +40,12 @@
 		let bckgrnd = new Image();
 		bckgrnd.src = "tree.jpg";
 
+		var door = new Image();
+		door.src = "singledoor.png";
+
+		var doorClosed = new Image();
+		doorClosed.src = "doorClosed.png";
+
 		window.addEventListener("keydown", handleKeyDown);
 		window.addEventListener("keyup", handleKeyUp);
 		
@@ -49,7 +55,6 @@
 			if(event.key == 'w' && hero.jumingUp == false) {
 				hero.jumingUp = true;
 				hero.jumpingSpeed = hero.startingJumpSpeed;
-
 			}
 			else if(event.key == 's') {
 				hero.movingDown = true;
@@ -59,6 +64,9 @@
 			}
 			else if(event.key == 'd') {
 				hero.movingRight = true;
+			}
+			else if(event.key == 'p' && hero.attacking == false){
+				hero.attacking = true;
 			}
 		}
 		
@@ -74,6 +82,9 @@
 			}
 			else if(event.key == 'd') {
 				hero.movingRight = false;
+			}
+			else if(event.key == 'p'){
+				hero.attacking = false;
 			}
 		}
 		
@@ -95,7 +106,6 @@
 		}
 		
 		function drawAllObjects() {
-			hero.draw();
 			for(var pos = 0; pos < walls.length; pos++) {
 				walls[pos].draw();
 			}
@@ -105,13 +115,20 @@
 			for(var pos = 0; pos < enemies.length; pos++) {
 				enemies[pos].draw();
 			}
+			for(var pos = 0; pos < potions.length; pos++) {
+				potions[pos].draw();
+			}		
 
+			context.drawImage(door, 20, 635);
+			context.drawImage(doorClosed, 930, 35); 
+			
+			hero.draw();
 		}
 		
 		
 		function Hero() {
-			this.x = 0;
-			this.y = 540;
+			this.x = 20;
+			this.y = 640;
 			
 			/* MOVING SPRITES */ 
 			this.leftSprite = new Image();
@@ -137,6 +154,7 @@
 			/*this.movingUp = false;*/
 			this.movingDown = false; 
 			this.jumingUp = false;
+			this.attacking = false; 
 			this.startingJumpSpeed = -10;
 			this.jumpingSpeed = this.startingJumpSpeed;
 
@@ -145,6 +163,7 @@
 				this.leftKick.src = "leftKick.gif";
 				this.rightKick = new Image();
 				this.rightKick.src = "rightKick.gif";
+				this.attackDamage = 50;
 
 
 			this.health = 200;
@@ -155,8 +174,8 @@
 			this.moneySprite = new Image();
 			this.moneySprite.src = "coinImg.png";
 
-			this.move = function() {
 
+			this.move = function() {
 				var origX = this.x;
 				var origY = this.y;
 				
@@ -178,7 +197,6 @@
 				if(this.jumingUp){
 					this.y += this.jumpingSpeed;
 					this.jumpingSpeed += .5;
-			
 				}
 
 				console.log(this.x + ", " + this.y + ", " + this.jumpingSpeed);
@@ -217,6 +235,8 @@
 
 				}
 				
+				/* COLLISION DETECTIONS */ 
+
 				for(var pos = 0; pos < walls.length; pos++) {
 					if( detectCollision(this, walls[pos]) ) {
 						this.x = origX;
@@ -225,41 +245,37 @@
 						break;
 					}
 				}
-				
+
+				for(var pos = 0; pos < enemies.length; pos++) {
+					if( detectCollision(this, enemies[pos]) && this.attacking)  {
+						this.x = origX;
+						this.y = origY;
+						enemies[pos].health -= this.attackDamage;
+						console.log("enemy collision");
+						console.log(enemies[pos].health);
+						break;
+					}
+				}
+
+				for(var pos = 0; pos < coins.length; pos++){
+					if( coins[pos].status == 1 && detectCollision(this, coins[pos]) ) {
+						console.log("coin collision");
+						this.money += coins[pos].amount;
+						coins[pos].status = 0;
+						coins[pos].amount = 0;
+						break;
+
+					}
+				}
+
+		
+
+				if(this.health < 0) {
+					alert("GAME OVER");
+					location.reload();
+				}	
 			}
 
-			this.attack = function() {
-				var damage = 50; 
-
-
-
-
-
-				/* 
-
-				Check to see if there is any platform beneath us, only perform attacks when on the ground
-
-					Check to see which direction (LEFT or RIGHT)
-
-						Make sure that character is not touching the enemy (20px hitbox) 
-
-							Use rightKick.gif for when direction == Right
-								
-								if collision is detected --> take off health points from Enemy 
-								(that requires that I make a health amount on the enemies and implement
-								collision detection on that end to make the enemy disappear)
-
-							Use leftKick.gif for when direction == Left
-
-
-
-				*/ 
-
-
-
-
-
-			}
 			
 			this.draw = function() {
 				var spriteX = 0;
@@ -282,10 +298,24 @@
 							this.actualSpriteHeight;
 				}
 				
-				
-				context.drawImage(this.currentSpriteSheet, 
+
+				if(this.attacking){
+					if(this.currentSpriteSheet == this.rightSprite){
+						context.drawImage(this.leftKick, this.x, this.y);						
+					}
+					if(this.currentSpriteSheet == this.leftSprite){
+						context.drawImage(this.rightKick, this.x, this.y);
+					}
+					
+				}
+
+ 	
+				if(this.attacking == false && this.health > 0){
+					context.drawImage(this.currentSpriteSheet, 
 						spriteX, spriteY, this.actualSpriteWidth,
 							this.actualSpriteHeight, this.x, this.y, this.width, this.height);
+				}
+
 			
 			
 				context.font = "30px Lucida Console Monaco monospace";
@@ -313,11 +343,20 @@
 		}
 	
 		function coin(x, y) {
-	
+
+			/* this variable will be used so that I can keep track of whether or not the player has collided or collected the coin, 
+
+				If it is 0, then it has been collected and will no longer appear on the screen 
+				
+				If it is 1, then it has not been collected and will appear on screen (context.draw)
+			*/ 
+			this.status = 1; 
 			this.coinSprite = new Image();
 			this.coinSprite.src = "coinsprite.png";
 			this.coinX = x;
 			this.coinY = y;
+			this.x = x;
+			this.y = y;
 
 			this.spritex = 0;
 			this.spritey = 0;
@@ -332,22 +371,42 @@
 
 			this.amount = 10; 
 
+
+		 
+
+
+
 			this.draw = function() {
 				this.currentImagePosition++;
 				this.currentImagePosition %= this.totalImageCount;
 				this.spritex = this.currentImagePosition * this.actualSpriteWidth;
 
-				context.drawImage( this.coinSprite, this.spritex, this.spritey, this.actualSpriteWidth, this.actualSpriteHeight, this.coinX, this.coinY, this.width, this.height);
+				if(this.status == 1) {
+					context.drawImage( this.coinSprite, this.spritex, this.spritey, this.actualSpriteWidth, this.actualSpriteHeight, this.coinX, this.coinY, this.width, this.height);
+
+				}
 
 			}
 
-				if(detectCollision(this, hero)) {
-					hero.money+= this.amount;
-				}
 
 		}
 
-		function Enemy(x,y, w, h){ 
+		function HealthPotion(x, y){
+			this.x = x; 
+			this.y = y;
+			this.status = 1; 
+
+			this.potionSprite = new Image();
+			this.potionSprite.src = "potion.png";
+
+			this.draw = function(){
+				if(status == 1){
+					context.drawImage(this.potion, this.x, this.y);
+				}
+			}
+		}
+
+		function Enemy(x,y, w, h, distance){ 
 			this.health = 100; 
 			this.x = x;
 			this.y = y;
@@ -358,21 +417,30 @@
 			this.direction = Math.floor(Math.random() * 4 + 1);
 			
 			this.draw = function() {
-				context.fillStyle = "red";
-				context.fillRect(this.x, this.y, this.width, this.height);
+
+				if(this.health > 0){
+					context.fillStyle = "red";
+					context.fillRect(this.x, this.y, this.width, this.height);
+				}
+
 			}
+
+			/* NORTH = 1, SOUTH = 2, 
+
+			EAST = 3, WEST = 4 */ 
 			
 			this.move = function() {
 				var origX = this.x;
 				var origY = this.y;
 				
-				if(this.direction == NORTH) {
+				/* if(this.direction == NORTH) {
 					this.y -= this.speed;
 				}
 				else if(this.direction == SOUTH) {
 					this.y += this.speed;
-				}
-				else if(this.direction == EAST) {
+				} */
+
+				if(this.direction == EAST) {
 					this.x += this.speed;
 				}
 				else {
@@ -385,7 +453,7 @@
 						this.x = origX;
 						this.y = origY;
 						//re-randomize the direction
-						this.direction = Math.floor(Math.random() * 4 + 1);
+						this.direction = Math.floor(Math.random() * 2 + 3);
 					}
 					
 				//check for collision with walls
@@ -394,7 +462,7 @@
 						this.x = origX;
 						this.y = origY;
 						//re-randomize the direction
-						this.direction = Math.floor(Math.random() * 4 + 1);
+						this.direction = Math.floor(Math.random() * 2 + 3);
 					}
 				}
 				
@@ -407,7 +475,7 @@
 						this.x = origX;
 						this.y = origY;
 						//re-randomize the direction
-						this.direction = Math.floor(Math.random() * 4 + 1);
+						this.direction = Math.floor(Math.random() * 2 + 3);
 					}
 				}
 				
@@ -415,8 +483,10 @@
 				if(detectCollision(this, hero)) {
 					this.x = origX;
 					this.y = origY;
-					this.direction = Math.floor(Math.random() * 4 + 1);
-					hero.health--;
+					this.direction = Math.floor(Math.random() * 2 + 3);
+					if(hero.attacking == false){
+						hero.health--;
+					}
 				}
 			}
 		}	
@@ -482,16 +552,14 @@
 				enemies.push(new Enemy(10,10,30,30));
 
 		enemies.push(new Enemy(40,10,30,30));
-
 		enemies.push(new Enemy(60,60,30,30));
-
 		enemies.push(new Enemy(40,70,30,30));
-
 		enemies.push(new Enemy(100,100,30,30));
-
 		enemies.push(new Enemy(30,100,30,30));
-
 		enemies.push(new Enemy(600,10,30,30));
+
+	var potions = [];
+		potions.push(new HealthPotion(30, 500));
 
 	
 
