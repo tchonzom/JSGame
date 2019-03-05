@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>JS Adventure Game</title>
+    <style>
+    	* {
+    		padding: 0; 
+    		margin: 0; 
+    	}
+    	canvas { 
+    		background-image: url(tree.jpg);
+    		background-repeat: no-repeat;
+    		background-size: auto;
+    		display: block; 
+    		margin: 0 auto; 
+			border:2px solid red;
+    	}
+    	div{
+    		color: blue;
+    	}
+    </style>
+</head>
+<body>
+<canvas id="myCanvas" width="1000" height="800"></canvas>
+
+<script>
+		var canvas = document.getElementById("myCanvas");
+		var context = canvas.getContext('2d');
+		var NORTH = 1, SOUTH = 2, EAST = 3, WEST = 4;
+		
+		var hero = new Hero();
+		
+		/*context.fillRect(0,640, canvas.width, 100);*/
+		let bckgrnd = new Image();
+		bckgrnd.src = "tree.jpg";
+		var door = new Image();
+		door.src = "singledoor.png";
+		var doorClosed = new Image();
+		doorClosed.src = "doorClosed.png";
+		window.addEventListener("keydown", handleKeyDown);
+		window.addEventListener("keyup", handleKeyUp);
+		
+		setInterval(loop, 33);
+		
+		function handleKeyDown(event) {
+			if(event.key == 'w' && hero.jumingUp == false) {
+				hero.jumingUp = true;
+				hero.jumpingSpeed = hero.startingJumpSpeed;
+			}
+			else if(event.key == 's') {
+				hero.movingDown = true;
+			}
+			else if(event.key == 'a') {
+				hero.movingLeft = true;
+			}
+			else if(event.key == 'd') {
+				hero.movingRight = true;
+			}
+			else if(event.key == 'p' && hero.attacking == false){
+				hero.attacking = true;
+			}
+		}
+		
+		function handleKeyUp(event) {
+			if(event.key == 'w') {
+				//hero.jumingUp = false;
+			}
+			else if(event.key == 's') {
+				hero.movingDown = false;
+			}
+			else if(event.key == 'a') {
+				hero.movingLeft = false;
+			}
+			else if(event.key == 'd') {
+				hero.movingRight = false;
+			}
+			else if(event.key == 'p'){
+				hero.attacking = false;
+			}
+		}
+		
+		function loop() {
+			clearBackground();
+			moveAllObjects();
+			drawAllObjects();
+		}
+		
+		function clearBackground() {
+			context.drawImage(bckgrnd, 0, 0);
+		}
+		
+		function moveAllObjects() {
+			hero.move();
+			for(var pos = 0; pos < enemies.length; pos++) {
+				enemies[pos].move();
+			}
+		}
+		
+		function drawAllObjects() {
+			for(var pos = 0; pos < walls.length; pos++) {
+				walls[pos].draw();
+			}
+			for(var pos = 0; pos < coins.length; pos++) {
+				coins[pos].draw();
+			}
+			for(var pos = 0; pos < enemies.length; pos++) {
+				enemies[pos].draw();
+			}
+			for(var pos = 0; pos < potions.length; pos++) {
+				potions[pos].draw();
+			}		
+			context.drawImage(door, 20, 635);
+			context.drawImage(doorClosed, 930, 35); 
+			
+			hero.draw();
+		}
+		
+		
+		function Hero() {
+			this.x = 20;
+			this.y = 640;
+			
+			/* MOVING SPRITES */ 
+			this.leftSprite = new Image();
+			this.rightSprite = new Image();
+			this.upSprite = new Image();
+			this.downSprite = new Image();
+			this.leftSprite.src = "spritesheetCoolRunnerLeft.png";
+			this.rightSprite.src = "spritesheetCoolRunnerRight.png";
+			this.upSprite.src = "spritesheetCoolRunnerUp.png";this.downSprite.src = "spritesheetCoolRunnerDown.png";
+			
+			this.currentSpriteSheet = this.rightSprite;
+			
+			this.actualSpriteWidth = 120;
+			this.actualSpriteHeight = 120;
+			this.currentImagePosition = 0;
+			this.totalImageCount = 6;
+			
+			this.width = 60;
+			this.height = 60;
+			this.speed = 5;
+			this.movingRight = false;
+			this.movingLeft = false;
+			/*this.movingUp = false;*/
+			this.movingDown = false; 
+			this.jumingUp = false;
+			this.attacking = false; 
+			this.startingJumpSpeed = -10;
+			this.jumpingSpeed = this.startingJumpSpeed;
+			
+			/* ATTACK SPRITES */ 
+			this.leftKick = new Image();
+			this.leftKick.src = "leftKick.gif";
+			this.rightKick = new Image();
+			this.rightKick.src = "rightKick.gif";
+			this.attackDamage = 50;
+			this.health = 200;
+			this.healthSprite = new Image();
+			this.healthSprite.src = "heart.png";
+			this.money = 0; 
+			this.moneySprite = new Image();
+			this.moneySprite.src = "coinImg.png";
+			this.move = function() {
+			var origX = this.x;
+			var origY = this.y;
+				
+			this.currentImagePosition++;
+			this.currentImagePosition %= this.totalImageCount;
+			/*if(this.movingUp) {
+				this.y -= this.speed;
+			}*/
+			
+			if(this.movingRight) {
+				this.x += this.speed;
+			}
+			
+			else if(this.movingLeft) {
+				this.x -= this.speed;
+			}
+			
+			if(this.jumingUp){
+				this.y += this.jumpingSpeed;
+				this.jumpingSpeed += .5;
+			}
+			
+			console.log(this.x + ", " + this.y + ", " + this.jumpingSpeed);
+			for(var pos = 0; pos < walls.length; pos++) {
+					if( detectCollision(this, walls[pos]) ) {
+						this.jumingUp = false;
+						this.jumpingSpeed = this.startingJumpSpeed;
+						this.x = origX;
+						this.y = origY;
+						console.log("collision detected");
+						break;
+					}
+			}
+			
+			if(this.jumpingSpeed > 0 || this.jumingUp == false){
+				origY = this.y;
+				this.y += 3; 
+				var floorBeneathUs = false;
+				for(var pos = 0; pos < walls.length; pos++) {
+						if( detectCollision(this, walls[pos]) ) {
+							this.floorBeneathUs = true;
+							this.jumingUp = false;
+							this.jumpingSpeed = this.startingJumpSpeed;
+							this.y = origY;
+							break;
+						}
+				}
+				
+				if(this.floorBeneathUs == false) {
+					this.y += 3;
+					console.log("floor beneath is false");
+				}
+			}
+			
+			/* COLLISION DETECTIONS */ 
+			for(var pos = 0; pos < walls.length; pos++) {
+				if( detectCollision(this, walls[pos]) ) {
+					this.x = origX;
+					this.y = origY;
+					console.log("alternate collision");
+					break;
+				}
+			}
+			
+			for(var pos = 0; pos < enemies.length; pos++) {
+				if( detectCollision(this, enemies[pos]) && this.attacking)  {
+					this.x = origX;
+					this.y = origY;
+					enemies[pos].health -= this.attackDamage;
+					console.log("enemy collision");
+					console.log(enemies[pos].health);
+					break;
+				}
+			}
+			
+			for(var pos = 0; pos < coins.length; pos++){
+				if( coins[pos].status == 1 && detectCollision(this, coins[pos]) ) {
+					console.log("coin collision");
+					this.money += coins[pos].amount;
+					coins[pos].status = 0;
+					coins[pos].amount = 0;
+					break;
+				}
+			}
+	
+			if(this.health < 0) {
+				alert("GAME OVER");
+				location.reload();
+			}	
+			}
+			
+			this.draw = function() {
+				var spriteX = 0;
+				var spriteY = 0;
+				var jumpHeight = 45; 
+				
+				if(this.movingLeft || this.movingRight) {
+					this.currentSpriteSheet = this.movingLeft ? 
+							this.leftSprite : this.rightSprite;
+							
+					spriteX = this.currentImagePosition * 
+							this.actualSpriteWidth;
+				}
+				
+				else if(this.jumingUp || this.movingDown) {
+					this.currentSpriteSheet = this.jumingUp ? 
+							this.upSprite : this.downSprite;
+				
+					spriteY = this.currentImagePosition * 
+							this.actualSpriteHeight;
+				}
+				
+				if(this.attacking){
+					if(this.currentSpriteSheet == this.rightSprite){
+						context.drawImage(this.leftKick, this.x, this.y);						
+					}
+					if(this.currentSpriteSheet == this.leftSprite){
+						context.drawImage(this.rightKick, this.x, this.y);
+					}
+					
+				}
+ 	
+				if(this.attacking == false && this.health > 0){
+					context.drawImage(this.currentSpriteSheet, 
+						spriteX, spriteY, this.actualSpriteWidth,
+							this.actualSpriteHeight, this.x, this.y, this.width, this.height);
+				}
+			
+				context.font = "30px Lucida Console Monaco monospace";
+				context.fillStyle = "white";
+				context.drawImage( this.healthSprite, 10, canvas.height - 40, 40, 40);
+				context.fillText( this.health, 50, canvas.height - 10);
+				context.drawImage( this.moneySprite, 110, canvas.height - 40, 35, 35);
+				context.fillText( this.money, 150, canvas.height - 10);
+			}
+		}
+		
+		function Wall(x,y,w,h) {
+			this.x = x;
+			this.y = y;
+			this.width = w;
+			this.height = h;
+			
+			this.draw = function() {
+				context.fillStyle = "green";
+				context.fillRect(this.x, this.y, this.width, this.height);
+			}
+		}
+	
+		function coin(x, y) {
+			/* this variable will be used so that I can keep track of whether or not the player has collided or collected the coin, 
+				If it is 0, then it has been collected and will no longer appear on the screen 
+				
+				If it is 1, then it has not been collected and will appear on screen (context.draw)
+			*/ 
+			this.status = 1; 
+			this.coinSprite = new Image();
+			this.coinSprite.src = "coinsprite.png";
+			this.coinX = x;
+			this.coinY = y;
+			this.x = x;
+			this.y = y;
+			this.spritex = 0;
+			this.spritey = 0;
+			this.actualSpriteWidth = 44;
+			this.actualSpriteHeight = 40;
+			this.currentImagePosition = 0;
+			this.totalImageCount = 10;
+			this.width = 60;
+			this.height = 60;
+			this.amount = 10; 
+		 
+			this.draw = function() {
+				this.currentImagePosition++;
+				this.currentImagePosition %= this.totalImageCount;
+				this.spritex = this.currentImagePosition * this.actualSpriteWidth;
+				if(this.status == 1) {
+					context.drawImage( this.coinSprite, this.spritex, this.spritey, this.actualSpriteWidth, this.actualSpriteHeight, this.coinX, this.coinY, this.width, this.height);
+				}
+			}
+		}
+		
+		function HealthPotion(x, y){
+			this.x = x; 
+			this.y = y;
+			this.status = 1; 
+			this.potionSprite = new Image();
+			this.potionSprite.src = "potion.png";
+			this.draw = function(){
+				if(status == 1){
+					context.drawImage(this.potion, this.x, this.y);
+				}
+			}
+		}
+		
+		function Enemy(x,y, w, h, distance){ 
+			this.health = 100; 
+			this.x = x;
+			this.y = y;
+			this.width = w;
+			this.height = h;
+			this.speed = 10;
+			
+			this.direction = Math.floor(Math.random() * 4 + 1);
+			
+			this.draw = function() {
+				if(this.health > 0){
+					context.fillStyle = "red";
+					context.fillRect(this.x, this.y, this.width, this.height);
+				}
+			}
+			
+			this.move = function() {
+				var origX = this.x;
+				var origY = this.y;
+				
+				if(this.direction == EAST) {
+					this.x += this.speed;
+				}
+				else {
+					this.x -= this.speed;
+				}
+				
+				//check for boundary of canvas
+				if(this.x < 0 || this.x + this.width > canvas.width ||
+					this.y < 0 || this.y + this.height > canvas.height) {
+						this.x = origX;
+						this.y = origY;
+						//re-randomize the direction
+						this.direction = Math.floor(Math.random() * 2 + 3);
+					}
+					
+				//check for collision with walls
+				for(var pos = 0; pos < walls.length; pos++) {
+					if(detectCollision( this, walls[pos]) ) {
+						this.x = origX;
+						this.y = origY;
+						//re-randomize the direction
+						this.direction = Math.floor(Math.random() * 2 + 3);
+					}
+				}
+						
+				//check for collision with walls
+				for(var pos = 0; pos < enemies.length; pos++) {
+					if(detectCollision( this, enemies[pos]) &&
+						(this.x != enemies[pos].x || this.y != enemies[pos].y)
+					) {
+						this.x = origX;
+						this.y = origY;
+						//re-randomize the direction
+						this.direction = Math.floor(Math.random() * 2 + 3);
+					}
+				}
+				
+				if(detectCollision(this, hero)) {
+					this.x = origX;
+					this.y = origY;
+					this.direction = Math.floor(Math.random() * 2 + 3);
+					if(hero.attacking == false){
+						hero.health--;
+					}
+				}
+			}
+		}	
+		
+		/*This function assumes that both parameters have
+		properties of x, y, width, and height. It returns 
+		true if the objects overlap, false otherwise.*/
+		
+		function detectCollision(obj1, obj2) {
+		  return (	obj1.x < obj2.x + obj2.width &&
+					obj1.x + obj1.width > obj2.x &&
+					obj1.y < obj2.y + obj2.height &&
+					obj1.y + obj1.height > obj2.y );
+		}
+	
+	var walls = [];
+		/* EDGES OF THE CANVAS FOR EASY COLLISION DETECTION */
+		walls.push( new Wall(0,0, 2, canvas.height));
+		walls.push( new Wall(0, 798, canvas.width, 2));
+		walls.push( new Wall(998, 0, 2, canvas.width));
+		walls.push( new Wall(0, 0, canvas.width, 2));
+		walls.push( new Wall(0,200,200,20));
+		walls.push(new Wall(800, 100, 200, 20));
+		walls.push(new Wall(330, 75, 300, 20));
+		walls.push(new Wall(330, 75, 20, 370));
+		walls.push(new Wall(330, 440, 300, 20));
+		walls.push(new Wall(180, 340, 150, 20));
+		walls.push(new Wall(0, 520, 150, 20));
+		walls.push(new Wall(0, 700, 150, 20));
+		walls.push(new Wall(330, 610, 150, 20));
+		walls.push(new Wall(450, 280, 290, 20));
+		walls.push(new Wall(740, 280, 20, 370));
+		walls.push(new Wall(580, 650, 180, 20));
+		walls.push(new Wall(750, 480, 140, 20));
+		walls.push(new Wall(850, 700, 150, 20));
+		
+	var coins = [];
+		coins.push(new coin( 80, 130));
+		coins.push(new coin( 435, 210));
+		coins.push(new coin( 565, 210));
+		coins.push(new coin( 700, 210));
+		coins.push(new coin( 350, 10));
+		coins.push(new coin( 460, 10));
+		coins.push(new coin( 570, 10));
+		coins.push(new coin( 850, 30));
+		coins.push(new coin( 775, 410));
+		coins.push(new coin( 80, 455));
+		coins.push(new coin( 80, 630));
+		coins.push(new coin( 370, 540));
+		coins.push(new coin( 350, 375));
+		coins.push(new coin( 460, 375));
+		coins.push(new coin( 570, 375));
+		coins.push(new coin( 680, 580));
+		coins.push(new coin( 600, 580));
+		coins.push(new coin( 870, 635));
+		coins.push(new coin( 230, 275));
+		
+	var enemies = [];
+		var enemies = [];
+		enemies.push(new Enemy(0,170,30,30));
+		enemies.push(new Enemy(800,70,30,30));
+		enemies.push(new Enemy(330,45,30,30));
+		enemies.push(new Enemy(360,410,30,30));
+		enemies.push(new Enemy(180,310,30,30));
+		enemies.push(new Enemy(0,490,30,30));
+		enemies.push(new Enemy(0, 670, 30, 30));
+		enemies.push(new Enemy(450, 250, 30, 30));
+		enemies.push(new Enemy(740, 250, 30, 30));
+		enemies.push(new Enemy(580, 620, 30, 30));
+		enemies.push(new Enemy(750, 450, 30, 30));
+		enemies.push(new Enemy(850, 670, 30, 30));
+		
+	var potions = [];
+		potions.push(new HealthPotion(30, 500));
+	
+</script>
+     
+</body>
+</html>
