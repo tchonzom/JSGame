@@ -3,11 +3,24 @@
 <head>
     <meta charset="utf-8" />
     <title>JS Adventure Game</title>
+   	<p>OBJECTIVE: Collect all the coins!</p>
+   	<p>W - jump, A - left, D - right, P - kick</p>
     <style>
+
+    	p {
+    		font-size: 30px; 
+    		text-align: center;
+    		padding: 10px;
+    		font-family: "Lucida Console", Monaco, monospace;
+    		color: white;
+
+    	}
     	* {
     		padding: 0; 
     		margin: 0; 
+    		background-color: green;
     	}
+
 
     	canvas { 
     		background-image: url(tree.jpg);
@@ -119,6 +132,7 @@
 
 			context.drawImage(potionImg, 0, 0 , 60, 60); */
 
+
 			context.drawImage(door, 20, 635);
 			context.drawImage(doorClosed, 910, 35); 
 
@@ -136,7 +150,8 @@
 				context.drawImage( endScreen, 0, 0, canvas.width, canvas.height);
 				context.font = "100px Helvetica";
 				context.fillStyle = "white";
-				context.fillText("YOU WIN!!!", 300, 400);
+				context.fillText("YOU WON!!!", 300, 400);
+
 			}
 			else {
 				for(var pos = 0; pos < walls.length; pos++) {
@@ -223,6 +238,8 @@
 			this.hitHealthSound = document.createElement("audio");
 			this.hitHealthSound.src = "heal.wav";
 
+			this.hitEnemySound = document.createElement("audio");
+
 			this.move = function() {
 				var origX = this.x;
 				var origY = this.y;
@@ -300,6 +317,7 @@
 						enemies[pos].health -= this.attackDamage;
 						console.log("enemy collision");
 						console.log(enemies[pos].health);
+						this.hitEnemySound.play();
 						break;
 					}
 				}
@@ -324,7 +342,6 @@
 						potions[pos].potionPoints = 0; 
 						this.hitHealthSound.play();
 						break;
-
 					}
 				}
 
@@ -455,20 +472,21 @@
 		}
 
 		function HealthPotion(x, y){
-			this.x = x; 
+			this.status = 1; 
+			this.potionSprite = new Image();
+			this.potionSprite.src = "potion.png"
+			this.healthX = x; 
+			this.healthY = y;
+			this.x = x;
 			this.y = y;
 			this.width = 60;
-			this.height = 50;
-			this.status = 1; 
+			this.height = 50;		
 			this.potionPoints = 20; 
-
-
-			this.potionSprite = new Image();
-			this.potionSprite.src = "potion.png";
-
+			
+			
 			this.draw = function(){
-				if(status == 1){
-					context.drawImage(this.potionSprite, this.x, this.y, this.width, this.height);
+				if(this.status == 1){
+					context.drawImage(this.potionSprite, this.healthX, this.healthY, this.width, this.height);
 				}
 			}
 		}
@@ -632,7 +650,8 @@
 		enemies.push(new Enemy(750, 450, 30, 30));
 
 	var potions = [];
-		potions.push(new HealthPotion(20, 540));
+		potions.push(new HealthPotion(15, 140));
+		potions.push(new HealthPotion(930, 645));
 
 	
 
