@@ -15,8 +15,8 @@
     		background-size: auto;
     		display: block; 
     		margin: 0 auto; 
-			border:2px solid red;
     	}
+
     	div{
     		color: blue;
     	}
@@ -46,6 +46,12 @@
 		var doorClosed = new Image();
 		doorClosed.src = "doorClosed.png";
 
+		var endScreen = new Image();
+		endScreen.src = "menuImg.png";
+
+
+		var collectedAllCoins = false;
+
 		window.addEventListener("keydown", handleKeyDown);
 		window.addEventListener("keyup", handleKeyUp);
 		
@@ -67,6 +73,7 @@
 			}
 			else if(event.key == 'p' && hero.attacking == false){
 				hero.attacking = true;
+				hero.kickSound.play();
 			}
 		}
 		
@@ -106,29 +113,61 @@
 		}
 		
 		function drawAllObjects() {
-			for(var pos = 0; pos < walls.length; pos++) {
-				walls[pos].draw();
-			}
-			for(var pos = 0; pos < coins.length; pos++) {
-				coins[pos].draw();
-			}
-			for(var pos = 0; pos < enemies.length; pos++) {
-				enemies[pos].draw();
-			}
-			for(var pos = 0; pos < potions.length; pos++) {
-				potions[pos].draw();
-			}		
+
+			/* var potionImg = new Image();
+			potionImg.src = "potion.png";
+
+			context.drawImage(potionImg, 0, 0 , 60, 60); */
 
 			context.drawImage(door, 20, 635);
-			context.drawImage(doorClosed, 930, 35); 
+			context.drawImage(doorClosed, 910, 35); 
+
+			if(hero.money == 190){
+				context.fillStyle = "white";
+				context.font = "24px Helvetica"
+				context.fillText("Congrats, you collected all the coins!", 400, 150 )
+				context.fillText("Now go to the door to complete the game!", 400, 200 )
+				context.drawImage(door, 910, 35);
+				collectedAllCoins = true;
+			}
+
+			if(hero.x > 870 && hero.y > 38 && hero.y < 41 && collectedAllCoins){
+				console.log("finished game");
+				context.drawImage( endScreen, 0, 0, canvas.width, canvas.height);
+				context.font = "100px Helvetica";
+				context.fillStyle = "white";
+				context.fillText("YOU WIN!!!", 300, 400);
+			}
+			else {
+				for(var pos = 0; pos < walls.length; pos++) {
+					walls[pos].draw();
+				}
+
+				for(var pos = 0; pos < coins.length; pos++) {
+					coins[pos].draw();
+				}
+
+				for(var pos = 0; pos < enemies.length; pos++) {
+					enemies[pos].draw();
+				}
+
+				for(var pos = 0; pos < potions.length; pos++) {
+					potions[pos].draw();
+				}	
+
+				hero.draw();
+
+			}
 			
-			hero.draw();
 		}
 		
 		
 		function Hero() {
 			this.x = 20;
 			this.y = 640;
+
+			this.doorOpen = new Image();
+			this.doorOpen.src = "singledoor.png";
 			
 			/* MOVING SPRITES */ 
 			this.leftSprite = new Image();
@@ -148,7 +187,7 @@
 			
 			this.width = 60;
 			this.height = 60;
-			this.speed = 5;
+			this.speed = 10;
 			this.movingRight = false;
 			this.movingLeft = false;
 			/*this.movingUp = false;*/
@@ -174,6 +213,15 @@
 			this.moneySprite = new Image();
 			this.moneySprite.src = "coinImg.png";
 
+			/* AUDIO */ 
+			this.hitCoinSound = document.createElement("audio");
+			this.hitCoinSound.src = "coin.wav";
+
+			this.kickSound = document.createElement("audio");
+			this.kickSound.src = "kick.wav";
+
+			this.hitHealthSound = document.createElement("audio");
+			this.hitHealthSound.src = "heal.wav";
 
 			this.move = function() {
 				var origX = this.x;
@@ -182,9 +230,9 @@
 				this.currentImagePosition++;
 				this.currentImagePosition %= this.totalImageCount;
 
-				/*if(this.movingUp) {
+				if(this.movingUp) {
 					this.y -= this.speed;
-				}*/
+				}
 
 				if(this.movingRight) {
 					this.x += this.speed;
@@ -213,6 +261,7 @@
 				}
 
 				if(this.jumpingSpeed > 0 || this.jumingUp == false){
+
 					origY = this.y;
 					this.y += 3; 
 					var floorBeneathUs = false;
@@ -231,8 +280,6 @@
 						this.y += 3;
 						console.log("floor beneath is false");
 					}
-
-
 				}
 				
 				/* COLLISION DETECTIONS */ 
@@ -263,17 +310,34 @@
 						this.money += coins[pos].amount;
 						coins[pos].status = 0;
 						coins[pos].amount = 0;
+						this.hitCoinSound.play();
 						break;
 
 					}
 				}
 
+				for(var pos = 0; pos < potions.length; pos++ ){
+					if(potions[pos].status ==1 && detectCollision(this, potions[pos])){
+						console.log("coin collision");
+						this.health += potions[pos].potionPoints;
+						potions[pos].status = 0;
+						potions[pos].potionPoints = 0; 
+						this.hitHealthSound.play();
+						break;
+
+					}
+				}
+
+
+
 		
 
 				if(this.health < 0) {
-					alert("GAME OVER");
+					alert("GAME OVER"); 					
 					location.reload();
 				}	
+
+
 			}
 
 			
@@ -310,7 +374,7 @@
 				}
 
  	
-				if(this.attacking == false && this.health > 0){
+				if(this.attacking == false && this.health > 0 ){
 					context.drawImage(this.currentSpriteSheet, 
 						spriteX, spriteY, this.actualSpriteWidth,
 							this.actualSpriteHeight, this.x, this.y, this.width, this.height);
@@ -325,7 +389,7 @@
 				context.fillText( this.health, 50, canvas.height - 10);
 
 				context.drawImage( this.moneySprite, 110, canvas.height - 40, 35, 35);
-				context.fillText( this.money, 150, canvas.height - 10);
+				context.fillText( this.money, 150, canvas.height - 10)
 
 			}
 		}
@@ -383,7 +447,6 @@
 
 				if(this.status == 1) {
 					context.drawImage( this.coinSprite, this.spritex, this.spritey, this.actualSpriteWidth, this.actualSpriteHeight, this.coinX, this.coinY, this.width, this.height);
-
 				}
 
 			}
@@ -394,14 +457,18 @@
 		function HealthPotion(x, y){
 			this.x = x; 
 			this.y = y;
+			this.width = 60;
+			this.height = 50;
 			this.status = 1; 
+			this.potionPoints = 20; 
+
 
 			this.potionSprite = new Image();
 			this.potionSprite.src = "potion.png";
 
 			this.draw = function(){
 				if(status == 1){
-					context.drawImage(this.potion, this.x, this.y);
+					context.drawImage(this.potionSprite, this.x, this.y, this.width, this.height);
 				}
 			}
 		}
@@ -422,6 +489,7 @@
 					context.fillStyle = "red";
 					context.fillRect(this.x, this.y, this.width, this.height);
 				}
+
 
 			}
 
@@ -480,13 +548,17 @@
 				}
 				
 				
-				if(detectCollision(this, hero)) {
+				if(detectCollision(this, hero) && this.health > 0) {
 					this.x = origX;
 					this.y = origY;
 					this.direction = Math.floor(Math.random() * 2 + 3);
 					if(hero.attacking == false){
 						hero.health--;
-					}
+				    }
+				    else {
+				    	this.health -= hero.attackDamage;
+				    }
+				 
 				}
 			}
 		}	
@@ -548,18 +620,19 @@
 		coins.push(new coin( 230, 275));
 
 	var enemies = [];
-		enemies.push(new Enemy(10,10,30,30));
-				enemies.push(new Enemy(10,10,30,30));
-
-		enemies.push(new Enemy(40,10,30,30));
-		enemies.push(new Enemy(60,60,30,30));
-		enemies.push(new Enemy(40,70,30,30));
-		enemies.push(new Enemy(100,100,30,30));
-		enemies.push(new Enemy(30,100,30,30));
-		enemies.push(new Enemy(600,10,30,30));
+		enemies.push(new Enemy(0,170,30,30));
+		enemies.push(new Enemy(800,70,30,30));
+		enemies.push(new Enemy(330,45,30,30));
+		enemies.push(new Enemy(360,410,30,30));
+		enemies.push(new Enemy(180,310,30,30));
+		enemies.push(new Enemy(0,490,30,30));
+		enemies.push(new Enemy(450, 250, 30, 30));
+		enemies.push(new Enemy(740, 250, 30, 30));	
+		enemies.push(new Enemy(580, 620, 30, 30));
+		enemies.push(new Enemy(750, 450, 30, 30));
 
 	var potions = [];
-		potions.push(new HealthPotion(30, 500));
+		potions.push(new HealthPotion(20, 540));
 
 	
 
